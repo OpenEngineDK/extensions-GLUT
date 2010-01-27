@@ -1,4 +1,4 @@
-// Meta header for GLUT components.
+// Program name and description
 // -------------------------------------------------------------------
 // Copyright (C) 2007 OpenEngine.dk (See AUTHORS) 
 // 
@@ -7,17 +7,14 @@
 // See the GNU General Public License for more details (see LICENSE). 
 //--------------------------------------------------------------------
 
-#ifndef _OPENENGINE_GLUT_H_
-#define _OPENENGINE_GLUT_H_
+#ifndef _GLUT_META_H_
+#define _GLUT_META_H_
 
-#include <Meta/OpenGL.h>
-
-#if defined __APPLE__
-    #include <GLUT/glut.h>
+#if defined(__APPLE__)
+#include <GLUT/glut.h>
 #else
-    #include <GL/glut.h>
+#include <GL/glut.h>
+
 #endif
 
-void InitializeGlut(int* argc, char** argv);
-
-#endif // _OPENENGINE_GLUT_H_
+#endif
