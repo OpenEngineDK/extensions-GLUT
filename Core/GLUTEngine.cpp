@@ -32,10 +32,22 @@ GLUTEngine::GLUTEngine() {
 }
 
 void GLUTEngine::Tick() {
-    Time time = Timer::GetTime();
     
-    process.Notify(ProcessEventArg(time,0));
+    Time _time;
 
+    unsigned int approx = 0;
+    for (int i=0;i<10;i++) 
+        approx += loops[i];
+    approx = approx / 10;
+
+    process.Notify(ProcessEventArg(time,approx));
+    
+    _time = Timer::GetTime();
+    loops[index] = (_time - time).AsInt();
+    time = _time;
+
+    index = (index + 1) % 10;
+    
 }
 
 void GLUTEngine::Start() {
@@ -43,7 +55,16 @@ void GLUTEngine::Start() {
 
     // Use idle or timer?
     engine = this;
+    
+    // Ready the approx calculation
+    index = 0;
+    for (int i=0;i<10;i++) 
+        loops[i] = 50;
+
+    time = Timer::GetTime();
+
     glutTimerFunc(1,timer,1);
+    
 
     // Lets hope for the best!
     glutMainLoop();

@@ -31,10 +31,10 @@ private:
 
 public:
    
-    GLUTEnvironment() {
+    GLUTEnvironment(int w,int h) {
         // Meta setup?
         
-        frame = new GLUTFrame();
+        frame = new GLUTFrame(w,h);
         input = new Devices::GLUTInput();
     }
  

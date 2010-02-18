@@ -29,6 +29,10 @@ private:
     Event<ProcessEventArg>      process;
     Event<DeinitializeEventArg> deinitialize;
 
+    Time time;
+
+    unsigned int index;
+    unsigned int loops[10];
 public:
     GLUTEngine();    
     virtual void Start();
