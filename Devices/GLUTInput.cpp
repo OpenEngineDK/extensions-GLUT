@@ -21,6 +21,40 @@ using Core::DeinitializeEventArg;
 
 static GLUTInput* input;
 
+Key specialToKey(unsigned int s) {
+    switch (s) {
+    case GLUT_KEY_UP: return KEY_UP;
+    case GLUT_KEY_DOWN: return KEY_DOWN;
+    case GLUT_KEY_LEFT: return KEY_LEFT;
+    case GLUT_KEY_RIGHT: return KEY_RIGHT;
+        
+    }
+    return KEY_LAST;
+}
+
+void specialKeyDown(int key, int x, int y) {
+    // TODO, this call is repeated.
+    
+    if (input) {
+        KeyboardEventArg arg;
+        arg.type = EVENT_PRESS;
+        arg.sym = specialToKey(key);
+        
+        input->KeyEvent().Notify(arg);
+    }
+}
+
+void specialKeyUp(int key, int x, int y) {
+    if (input) {
+        KeyboardEventArg arg;
+        arg.type = EVENT_RELEASE;
+        arg.sym = specialToKey(key);
+
+        input->KeyEvent().Notify(arg);
+    }
+}
+
+
 void keyDown(unsigned char key, int x, int y) {
     // TODO, this call is repeated.
     
@@ -103,6 +137,11 @@ void GLUTInput::Handle(InitializeEventArg arg) {
     input = this;
     glutKeyboardFunc(keyDown);
     glutKeyboardUpFunc(keyUp);
+
+    glutSpecialFunc(specialKeyDown);
+    glutSpecialUpFunc(specialKeyUp);
+
+
     glutMouseFunc(mouseDown);
     glutPassiveMotionFunc(mouseMove);
     glutMotionFunc(mouseMove);
