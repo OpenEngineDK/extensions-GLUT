@@ -11,6 +11,7 @@
 #include <Meta/GLUT.h>
 #include <Logging/Logger.h>
 #include <Utils/Timer.h>
+#include <cstdlib>
 
 namespace OpenEngine {
 namespace Core {
