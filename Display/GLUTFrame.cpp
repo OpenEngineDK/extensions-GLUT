@@ -67,14 +67,8 @@ void GLUTFrame::SetDepth(const int depth) {
     //if (!init) this->depth = depth;
 }
 
-void GLUTFrame::SetOptions(const FrameOption options) {
-    // bool reload = false;
-    // if (options != this->options) reload = true;
-    // this->options = options;
-    // if (init && reload) {
-    //     CreateSurface();
-    // }
-    throw 42;
+void GLUTFrame::SetOptions(const FrameOption options) {    
+     this->options = options;     
 }
 
 void GLUTFrame::ToggleOption(const FrameOption option) {
@@ -89,15 +83,10 @@ void GLUTFrame::Handle(InitializeEventArg arg) {
     char *argv[] = {"hest"};
     logger.info << "Initialize GLUT" << logger.end;
     glutInit(&argc,argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_STEREO); 
-    // non-stereo for main window
-    
-    // glutInitDisplayMode(GLUT_DOUBLE |
-    //                     GLUT_RGB |
-    //                     GLUT_DEPTH |
-    //                     GLUT_STEREO); // non-stereo for main window
-    
-
+    unsigned int mode = GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH; 
+    if (IsOptionSet(FRAME_STEREO))
+        mode |= GLUT_STEREO;
+    glutInitDisplayMode(mode);
 
 
     if (IsOptionSet(FRAME_FULLSCREEN)) {
