@@ -10,6 +10,7 @@
 #include <Display/GLUTFrame.h>
 #include <Meta/GLUT.h>
 #include <Logging/Logger.h>
+#include <sstream>
 
 namespace OpenEngine {
 namespace Display {
@@ -88,11 +89,35 @@ void GLUTFrame::Handle(InitializeEventArg arg) {
     char *argv[] = {"hest"};
     logger.info << "Initialize GLUT" << logger.end;
     glutInit(&argc,argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); // non-stereo for main window
-	glutInitWindowSize (width, height);
-	// gMainWindow =
-    glutCreateWindow("GLUTStereo");
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_STEREO); 
+    // non-stereo for main window
+    
+    // glutInitDisplayMode(GLUT_DOUBLE |
+    //                     GLUT_RGB |
+    //                     GLUT_DEPTH |
+    //                     GLUT_STEREO); // non-stereo for main window
+    
+
+
+
+    if (IsOptionSet(FRAME_FULLSCREEN)) {
+            std::ostringstream os;
+            os << width << "x" << height << ":" << depth;
+            
+
+        glutGameModeString( os.str().c_str());// "1024x768:32@75" ); //the settings     
+        glutEnterGameMode();
+    } else {
+        glutInitWindowSize (width, height);
+        glutCreateWindow("GLUTStereo");
+    }
+        
+
+
     glutDisplayFunc(display);
+
+
+    
 
     //if (GLUT_Init(GLUT_INIT_VIDEO) < 0 )
     //throw Exception("GLUT_Init: " + string(GLUT_GetError()));
@@ -115,7 +140,8 @@ void GLUTFrame::Handle(ProcessEventArg arg) {
 
 void GLUTFrame::Handle(DeinitializeEventArg arg) {
     //SDL_QuitSubSystem(SDL_INIT_VIDEO);
-    throw "deinit";
+    if (IsOptionSet(FRAME_FULLSCREEN))
+        glutLeaveGameMode();
 }
 
 

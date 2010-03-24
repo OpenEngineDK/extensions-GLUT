@@ -25,7 +25,7 @@ void timer(int val) {
     if (engine) {
         engine->Tick();
     }
-    glutTimerFunc(1,timer,1); // full speed! (could be changed?)
+    glutTimerFunc(0,timer,1); // full speed! (could be changed?)
 }
 
 GLUTEngine::GLUTEngine() {
@@ -64,16 +64,18 @@ void GLUTEngine::Start() {
 
     time = Timer::GetTime();
 
-    glutTimerFunc(1,timer,1);
+    glutTimerFunc(0,timer,1);
     
 
     // Lets hope for the best!
     glutMainLoop();
-    deinitialize.Notify(DeinitializeEventArg());
+    
 }
 
 void GLUTEngine::Stop() {
     // only way to end the glutMainLoop
+    deinitialize.Notify(DeinitializeEventArg());
+
     exit(0);
 }
 
