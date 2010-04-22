@@ -7,6 +7,8 @@
 // See the GNU General Public License for more details (see LICENSE). 
 //--------------------------------------------------------------------
 
+#include <Meta/OpenGL.h>
+
 #include <Display/GLUTFrame.h>
 #include <Display/ViewingVolume.h>
 #include <Display/StereoCamera.h>
@@ -14,6 +16,7 @@
 #include <Logging/Logger.h>
 #include <sstream>
 #include <map>
+
 
 namespace OpenEngine {
 namespace Display {
@@ -141,18 +144,31 @@ void GLUTFrame::Handle(ProcessEventArg arg) {
     #ifdef OE_SAFE
     if (!init) throw new Exception("GLUTFrame not initialized");
     #endif
+
+    glClearColor(bgc[0], bgc[1], bgc[2], bgc[3]);
+    if (vv != NULL) {
+        vv->SignalRendering(arg.approx);
+    }
+    // Set viewport size 
+    Vector<4,int> d(0, 0, width, height);
+    glViewport((GLsizei)d[0], (GLsizei)d[1], (GLsizei)d[2], (GLsizei)d[3]);
+    CHECK_FOR_GL_ERROR();
+    
     if (IsOptionSet(FRAME_STEREO)) {
         IViewingVolume* vol = vv;
         vv = stereo->GetLeft();
         glDrawBuffer(GL_BACK_LEFT);
+        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         redrawEvent.Notify(RedrawEventArg(*this, arg.start, arg.approx));
         vv = stereo->GetRight();
         glDrawBuffer(GL_BACK_RIGHT);
+        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         redrawEvent.Notify(RedrawEventArg(*this, arg.start, arg.approx));
         vv = vol;
     }
     else {
         glDrawBuffer(GL_BACK);
+        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         redrawEvent.Notify(RedrawEventArg(*this, arg.start, arg.approx));
     }
     glutSwapBuffers();
