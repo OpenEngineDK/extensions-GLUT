@@ -15,6 +15,8 @@
 #include <Display/GLUTFrame.h>
 #include <Devices/GLUTInput.h>
 
+#include <Logging/Logger.h>
+
 namespace OpenEngine {
 namespace Display {
 
@@ -25,34 +27,46 @@ namespace Display {
  */
 class GLUTEnvironment : public IEnvironment {
 private:
-
-    GLUTFrame* frame;
+    // default values
+    int w, h, d;
+    FrameOption o;
+    // GLUTFrame* frame;
     Devices::GLUTInput* input;
+
+    list<GLUTFrame*> frames;
 
 public:
    
-    GLUTEnvironment(int w,int h,int d=32,FrameOption options = FrameOption()) {
+    GLUTEnvironment(int w,int h,int d=32,FrameOption options = FrameOption())
+        : w(w), h(h), d(d), o(options)
+    {
         // Meta setup?
-        
-        frame = new GLUTFrame(w,h,d,options);
+        // frame = new GLUTFrame(w,h,d,options);
         input = new Devices::GLUTInput();
     }
  
 
     void Handle(Core::InitializeEventArg arg) {
-        frame->Handle(arg);
+        list<GLUTFrame*>::iterator i = frames.begin();
+        for (; i != frames.end(); ++i) {
+            (*i)->Handle(arg);
+        }
         input->Handle(arg);
     }
     void Handle(Core::ProcessEventArg arg) {
-        frame->Handle(arg);
+        list<GLUTFrame*>::iterator i = frames.begin();
+        for (; i != frames.end(); ++i)
+            (*i)->Handle(arg);
         input->Handle(arg);
     }
     void Handle(Core::DeinitializeEventArg arg) {
-        frame->Handle(arg);
+        list<GLUTFrame*>::iterator i = frames.begin();
+        for (; i != frames.end(); ++i)
+            (*i)->Handle(arg);
         input->Handle(arg);
     }
 
-    IFrame&             GetFrame()    { return *frame; }
+    IFrame& CreateFrame() { GLUTFrame* f = new GLUTFrame(w, h, d, o); frames.push_back(f); return *f; }
     Devices::IMouse*    GetMouse()    { return input; }
     Devices::IKeyboard* GetKeyboard() { return input; }
     Devices::IJoystick* GetJoystick() { return input; }

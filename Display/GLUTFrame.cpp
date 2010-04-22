@@ -8,24 +8,44 @@
 //--------------------------------------------------------------------
 
 #include <Display/GLUTFrame.h>
+#include <Display/ViewingVolume.h>
+#include <Display/StereoCamera.h>
 #include <Meta/GLUT.h>
 #include <Logging/Logger.h>
 #include <sstream>
+#include <map>
 
 namespace OpenEngine {
 namespace Display {
 
-void display() {
-    glutSwapBuffers();
+using std::map;
+
+// evil callback hack
+static bool glutIsInitialized = false;
+static map<int, GLUTFrame*> windows;
+
+void GLUTFrame::display() {
+    // logger.info << "window: " << glutGetWindow() << logger.end;
+    // glutSwapBuffers();
 }
 
+void GLUTFrame::reshape(int w, int h) {
+    GLUTFrame* f = windows[glutGetWindow()];
+    f->width = w;
+    f->height = h;
+    f->resizeEvent.Notify(ResizeEventArg(*f));
+    //    logger.info << "reshape: " << glutGetWindow() << logger.end;
+}
 
 GLUTFrame::GLUTFrame(int w,int h,int d,FrameOption opts)
-    : IFrame(w,h,d,opts) 
-    , width(w)
+    : width(w)
     , height(h)
     , depth(d)
-    , options(FrameOption(opts|FRAME_OPENGL)) {    
+    , options(FrameOption(opts|FRAME_OPENGL)) 
+    , init(false)
+    , dummycam(new ViewingVolume())
+    , stereo(new StereoCamera(*dummycam))
+{
 }
 
 GLUTFrame::~GLUTFrame() {
@@ -34,6 +54,10 @@ GLUTFrame::~GLUTFrame() {
 bool GLUTFrame::IsFocused() const {
     throw "focus";
     return true;
+}
+
+string GLUTFrame::GetName() const {
+    return name;
 }
 
 unsigned int GLUTFrame::GetWidth() const {
@@ -51,24 +75,32 @@ unsigned int GLUTFrame::GetDepth() const {
 FrameOption GLUTFrame::GetOptions() const {
     return options;
 }
+
 bool GLUTFrame::GetOption(const FrameOption option) const {
     return (option & GetOptions()) == option;
 }
 
-void GLUTFrame::SetWidth(const int width) {
-    //if (!init) this->width = width;
+void GLUTFrame::SetName(const string name) {
+    this->name = name;
+    if (init) glutSetWindowTitle(name.c_str());
 }
 
-void GLUTFrame::SetHeight(const int height) {
-    //if (!init) this->height = height;
+void GLUTFrame::SetWidth(const unsigned int width) {
+    this->width = width;
+    if (init) glutReshapeWindow(width, height);
 }
 
-void GLUTFrame::SetDepth(const int depth) {
-    //if (!init) this->depth = depth;
+void GLUTFrame::SetHeight(const unsigned int height) {
+    this->height = height;
+    if (init) glutReshapeWindow(width, height);
+}
+
+void GLUTFrame::SetDepth(const unsigned int depth) {
+    this->depth = depth;
 }
 
 void GLUTFrame::SetOptions(const FrameOption options) {    
-     this->options = options;     
+    this->options = options;
 }
 
 void GLUTFrame::ToggleOption(const FrameOption option) {
@@ -76,64 +108,72 @@ void GLUTFrame::ToggleOption(const FrameOption option) {
     SetOptions(opt);
 }
 
-
-void GLUTFrame::Handle(InitializeEventArg arg) {
+void GLUTFrame::Handle(Core::InitializeEventArg arg) {
     // Initialize the video frame
     int argc = 1;
-    char *argv[] = {(char*)"hest"};
+    char *argv[] = {"hest"};
     logger.info << "Initialize GLUT" << logger.end;
     glutInit(&argc,argv);
     unsigned int mode = GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH; 
     if (IsOptionSet(FRAME_STEREO))
         mode |= GLUT_STEREO;
     glutInitDisplayMode(mode);
-
-
+    glutInitWindowSize (width, height);
     if (IsOptionSet(FRAME_FULLSCREEN)) {
-            std::ostringstream os;
-            os << width << "x" << height << ":" << depth;
-            
-
-        glutGameModeString( os.str().c_str());// "1024x768:32@75" ); //the settings     
+        std::ostringstream os;
+        os << width << "x" << height << ":" << depth;
+        glutGameModeString( os.str().c_str() );
+        if (glutGameModeGet(GLUT_GAME_MODE_POSSIBLE) == 0) 
+            logger.info << "GLUT: Game mode not possible." << logger.end;
+        logger.info << "GLUT: Enter game mode: " << os.str() << logger.end;
         glutEnterGameMode();
-    } else {
-        glutInitWindowSize (width, height);
-        glutCreateWindow("GLUTStereo");
+        window = glutGetWindow();
     }
-        
-
-
-    glutDisplayFunc(display);
-
-
-    
-
-    //if (GLUT_Init(GLUT_INIT_VIDEO) < 0 )
-    //throw Exception("GLUT_Init: " + string(GLUT_GetError()));
-
-    //CreateSurface();
-
-    // Set the private initialization flag
-    //init = true;
-    //throw "handle";
+    else {
+        window = glutCreateWindow(name.c_str());
+        windows[window] = this;
+    }
+    init = true;
+    glutReshapeFunc(GLUTFrame::reshape);
 }
 
 void GLUTFrame::Handle(ProcessEventArg arg) {
-    // Start by flipping the screen which is the
-    // result from last engine loop.
-    //if (IsOptionSet(FRAME_OPENGL))
-    //GLUT_GL_SwapBuffers();
-    glutPostRedisplay();
-    //throw "process";
+    #ifdef OE_SAFE
+    if (!init) throw new Exception("GLUTFrame not initialized");
+    #endif
+    if (IsOptionSet(FRAME_STEREO)) {
+        IViewingVolume* vol = vv;
+        vv = stereo->GetLeft();
+        glDrawBuffer(GL_BACK_LEFT);
+        redrawEvent.Notify(RedrawEventArg(*this, arg.start, arg.approx));
+        vv = stereo->GetRight();
+        glDrawBuffer(GL_BACK_RIGHT);
+        redrawEvent.Notify(RedrawEventArg(*this, arg.start, arg.approx));
+        vv = vol;
+    }
+    else {
+        glDrawBuffer(GL_BACK);
+        redrawEvent.Notify(RedrawEventArg(*this, arg.start, arg.approx));
+    }
+    glutSwapBuffers();
 }
 
-void GLUTFrame::Handle(DeinitializeEventArg arg) {
-    //SDL_QuitSubSystem(SDL_INIT_VIDEO);
+void GLUTFrame::Handle(Core::DeinitializeEventArg arg) {
     if (IsOptionSet(FRAME_FULLSCREEN))
         glutLeaveGameMode();
+    deinitEvent.Notify(DeinitializeEventArg(*this));
+    windows.erase(window);
+    glutDestroyWindow(window);
 }
 
+StereoCamera& GLUTFrame::GetStereoCamera() const {
+    return *stereo;
+}
 
+void GLUTFrame::SetViewingVolume(IViewingVolume* vv) {
+    this->vv = vv;
+    stereo->SetViewingVolume(*vv);
+}
 
 } // NS Display
 } // NS OpenEngine
