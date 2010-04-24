@@ -80,7 +80,7 @@ void GLUTFrame::ToggleOption(const FrameOption option) {
 void GLUTFrame::Handle(InitializeEventArg arg) {
     // Initialize the video frame
     int argc = 1;
-    char *argv[] = {"hest"};
+    char *argv[] = {(char*)"hest"};
     logger.info << "Initialize GLUT" << logger.end;
     glutInit(&argc,argv);
     unsigned int mode = GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH; 
