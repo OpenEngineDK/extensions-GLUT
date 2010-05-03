@@ -10,14 +10,12 @@
 #define _OE_GLUT_FRAME_H_
 
 #include <Display/IFrame.h>
+#include <Display/ICanvas.h>
+#include <string>
 
 namespace OpenEngine {
 namespace Display {
-
-    class StereoCamera;
-    
-    using OpenEngine::Core::ProcessEventArg;
-
+    using std::string;
 /**
  * GLUT implementation of IFrame
  *
@@ -25,36 +23,31 @@ namespace Display {
  */
 class GLUTFrame : public IFrame {
 private:
-    
-    // class GLUTCanvas: public ICanvas {
-    // private:
-    //     GLUTFrame& frame;
-    // public:
-    //     GLUTCanvas(GLUTFrame& frame): frame(frame) {}
-    //     unsigned int GetWidth() const { return frame.GetWidth(); }
-    //     unsigned int GetHeight() const { return frame.GetHeight(); }
-    //     unsigned int GetDepth() const { return frame.GetDepth(); }
-    //     void SetWidth(const unsigned int width) { frame.SetWidth(width); }
-    //     void SetHeight(const unsigned int height) { frame.SetHeight(height); }
-    //     void SetDepth(const unsigned int depth) { frame.SetDepth(depth); }
-    //     void SetViewingVolume(IViewingVolume* vv) { frame.SetViewingVolume(vv); }
-    //     IViewingVolume* GetViewingVolume() const { return frame.GetViewingVolume(); }
-    //     void SetScene(ISceneNode* scene) { frame.SetScene(scene); }
-    //     ISceneNode* GetScene() const { return frame.GetScene(); }
+    class FrameCanvas: public ICanvas {
+    private:
+        IFrame& frame;
+    public:
+        FrameCanvas(IFrame& frame): frame(frame) {}
+        virtual ~FrameCanvas() {}
+        unsigned int GetWidth() const { return frame.GetWidth(); }
+        unsigned int GetHeight() const { return frame.GetHeight(); }
+        void SetWidth(const unsigned int width) { frame.SetWidth(width); }
+        void SetHeight(const unsigned int height) { frame.SetHeight(height); }
 
-    //     void Handle(Display::InitializeEventArg arg) {}
-    //     void Handle(Display::DeinitializeEventArg arg) {}
-    //     void Handle(RedrawEventArg arg) {}
-    //     void Handle(ResizeEventArg arg) {}
-    // };
-    
+        void Handle(Display::InitializeEventArg arg) {}
+        void Handle(Display::DeinitializeEventArg arg) {}
+        void Handle(Display::ProcessEventArg arg) {}
+        void Handle(Display::ResizeEventArg arg) {}
+
+        ITexture2DPtr GetTexture() { return ITexture2DPtr(); }
+    };    
+    ICanvas* canvas;
+    FrameCanvas fc;
     int window;
     string name;
     unsigned int width, height, depth;
     FrameOption options;
     bool init;
-    IViewingVolume* dummycam;
-    StereoCamera* stereo;
     void InitFrame();
 
     // dirty callback hack.
@@ -82,11 +75,11 @@ public:
     void ToggleOption(const FrameOption option);
 
     void Handle(Core::InitializeEventArg arg);
-    void Handle(ProcessEventArg arg);
+    void Handle(Core::ProcessEventArg arg);
     void Handle(Core::DeinitializeEventArg arg);
 
-    void SetViewingVolume(IViewingVolume* vv);
-    StereoCamera& GetStereoCamera() const;
+    void SetCanvas(ICanvas* canvas) { this->canvas = canvas; }
+    ICanvas* GetCanvas() { return canvas; }
 };
 
 } // NS Display

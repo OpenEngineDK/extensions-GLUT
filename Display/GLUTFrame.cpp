@@ -36,18 +36,18 @@ void GLUTFrame::reshape(int w, int h) {
     GLUTFrame* f = windows[glutGetWindow()];
     f->width = w;
     f->height = h;
-    f->resizeEvent.Notify(ResizeEventArg(*f));
+    ((IListener<Display::ResizeEventArg>*)f->canvas)->Handle(Display::ResizeEventArg(f->fc));
     //    logger.info << "reshape: " << glutGetWindow() << logger.end;
 }
 
 GLUTFrame::GLUTFrame(int w,int h,int d,FrameOption opts)
-    : width(w)
+    : canvas(NULL)
+    , fc(FrameCanvas(*this))
+    , width(w)
     , height(h)
     , depth(d)
     , options(FrameOption(opts|FRAME_OPENGL)) 
     , init(false)
-    , dummycam(new ViewingVolume())
-    , stereo(new StereoCamera(*dummycam))
 {
 }
 
@@ -140,55 +140,37 @@ void GLUTFrame::Handle(Core::InitializeEventArg arg) {
     glutReshapeFunc(GLUTFrame::reshape);
 }
 
-void GLUTFrame::Handle(ProcessEventArg arg) {
+void GLUTFrame::Handle(Core::ProcessEventArg arg) {
     #ifdef OE_SAFE
     if (!init) throw new Exception("GLUTFrame not initialized");
     #endif
 
-    glClearColor(bgc[0], bgc[1], bgc[2], bgc[3]);
-    if (vv != NULL) {
-        vv->SignalRendering(arg.approx);
-    }
-    // Set viewport size 
-    Vector<4,int> d(0, 0, width, height);
-    glViewport((GLsizei)d[0], (GLsizei)d[1], (GLsizei)d[2], (GLsizei)d[3]);
-    CHECK_FOR_GL_ERROR();
-    
-    if (IsOptionSet(FRAME_STEREO)) {
-        IViewingVolume* vol = vv;
-        vv = stereo->GetLeft();
-        glDrawBuffer(GL_BACK_LEFT);
-        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-        redrawEvent.Notify(RedrawEventArg(*this, arg.start, arg.approx));
-        vv = stereo->GetRight();
-        glDrawBuffer(GL_BACK_RIGHT);
-        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-        redrawEvent.Notify(RedrawEventArg(*this, arg.start, arg.approx));
-        vv = vol;
-    }
-    else {
-        glDrawBuffer(GL_BACK);
-        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-        redrawEvent.Notify(RedrawEventArg(*this, arg.start, arg.approx));
-    }
+    // if (IsOptionSet(FRAME_STEREO)) {
+    //     IViewingVolume* vol = vv;
+    //     vv = stereo->GetLeft();
+    //     glDrawBuffer(GL_BACK_LEFT);
+    //     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    //     redrawEvent.Notify(RedrawEventArg(*this, arg.start, arg.approx));
+    //     vv = stereo->GetRight();
+    //     glDrawBuffer(GL_BACK_RIGHT);
+    //     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    //     redrawEvent.Notify(RedrawEventArg(*this, arg.start, arg.approx));
+    //     vv = vol;
+    // }
+    // else {
+        // glDrawBuffer(GL_BACK);
+        // glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    ((IListener<Display::ProcessEventArg>*)canvas)->Handle(Display::ProcessEventArg(fc, arg.start, arg.approx));
+    // }
     glutSwapBuffers();
 }
 
 void GLUTFrame::Handle(Core::DeinitializeEventArg arg) {
     if (IsOptionSet(FRAME_FULLSCREEN))
         glutLeaveGameMode();
-    deinitEvent.Notify(DeinitializeEventArg(*this));
+    ((IListener<Display::DeinitializeEventArg>*)canvas)->Handle(Display::DeinitializeEventArg(fc));
     windows.erase(window);
     glutDestroyWindow(window);
-}
-
-StereoCamera& GLUTFrame::GetStereoCamera() const {
-    return *stereo;
-}
-
-void GLUTFrame::SetViewingVolume(IViewingVolume* vv) {
-    this->vv = vv;
-    stereo->SetViewingVolume(*vv);
 }
 
 } // NS Display
