@@ -112,9 +112,16 @@ void GLUTFrame::ToggleOption(const FrameOption option) {
 }
 
 void GLUTFrame::Handle(Core::InitializeEventArg arg) {
+    if (init) return;
     // Initialize the video frame
+    InitFrame();
+    ((IListener<Display::InitializeEventArg>*)canvas)->Handle(Display::InitializeEventArg(fc));
+    init = true;
+}
+
+void GLUTFrame::InitFrame() {
     int argc = 1;
-    char *argv[] = {"hest"};
+    char *argv[] = {(char*)"hest"};
     logger.info << "Initialize GLUT" << logger.end;
     glutInit(&argc,argv);
     unsigned int mode = GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH; 
@@ -136,9 +143,8 @@ void GLUTFrame::Handle(Core::InitializeEventArg arg) {
         window = glutCreateWindow(name.c_str());
         windows[window] = this;
     }
-    init = true;
     glutReshapeFunc(GLUTFrame::reshape);
-}
+ }
 
 void GLUTFrame::Handle(Core::ProcessEventArg arg) {
     #ifdef OE_SAFE
@@ -171,6 +177,7 @@ void GLUTFrame::Handle(Core::DeinitializeEventArg arg) {
     ((IListener<Display::DeinitializeEventArg>*)canvas)->Handle(Display::DeinitializeEventArg(fc));
     windows.erase(window);
     glutDestroyWindow(window);
+    init = false;
 }
 
 } // NS Display
